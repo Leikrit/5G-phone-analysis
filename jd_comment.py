@@ -81,13 +81,12 @@ def main():
     ws = wb['Sheet1']
     for row in ws.iter_rows(min_row=2, min_col=2, max_col=2, max_row=151, values_only=True):
         print(row[0])
-        for i in range(0, 10):
-            for k in range(0, 5):
+        for k in range(0, 2):
+            for i in range(0, 10):
                 time.sleep(1.5)
                 # 记得time反爬 其实我在爬取的时候没有使用代理ip也没给我封 不过就当这是个习惯吧
                 first = start(j, k, row[0])
                 test = parse(first)
-
                 if judge:
                     excel(test, row[0])
                     judge = False

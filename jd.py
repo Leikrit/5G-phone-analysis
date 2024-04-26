@@ -15,7 +15,7 @@ def jd_page():
     page=1
     s = 1
     count = 1
-    for i in range(1,6):
+    for i in range(1,3):
         print("page="+str(page)+",s="+str(s))
         url = "https://search.jd.com/Search?keyword=5G手机&wq=5G手机&pvid=feb1e81188ca4a11964991bce3bbf228&isList=0&page="+str(page)+"&s="+str(s)+"&click=0"
         page = page+1
