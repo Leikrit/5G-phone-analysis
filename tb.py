@@ -7,6 +7,7 @@ from selenium.common import TimeoutException
 from pyquery import PyQuery as pq
 from urllib.parse import quote
 import time
+import openpyxl
 
 chrome_options = Options()
 chrome_options.add_experimental_option("debuggerAddress", "localhost:9222") #此处端口保持和命令行启动的端口一致
@@ -14,7 +15,16 @@ driver = Chrome(options=chrome_options)
 wait = WebDriverWait(driver, 10)
 
 
+wb = openpyxl.Workbook()
+ws = wb.create_sheet(index=0)
+
+ws.cell(row=1, column=1, value="index")
+ws.cell(row=1, column=2, value="id")
+ws.cell(row=1, column=3, value="name")
+ws.cell(row=1, column=4, value="price")
+
 # 模拟淘宝登录
+# chrome.exe --remote-debugging-port=9222 --user-data-dir='某个存在的文件夹地址'
 def login_taobao():
     print('开始登录...')
     try:
@@ -22,8 +32,8 @@ def login_taobao():
         driver.get(login_url)
         input_login_id = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-id')))
         input_login_password = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-password')))
-        input_login_id.send_keys('tb64925158') # 用你自己的淘宝账号替换
-        input_login_password.send_keys('@zdm200212') # 用你自己的密码替换
+        input_login_id.send_keys('tb64925158')  # 用你自己的淘宝账号替换
+        input_login_password.send_keys('@zdm200212')  # 用你自己的密码替换
         submit = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.fm-button.fm-submit.password-login')))
         submit.click()
         is_loging = wait.until(EC.url_changes(login_url))
@@ -43,9 +53,9 @@ def login_taobao():
 def get_products():
     """提取商品数据"""
     html = driver.page_source
-    print(html)
     doc = pq(html)
     items = doc('.Card--doubleCardWrapper--L2XFE73').items()
+    count = 1
     for item in items:
         product = {'url': item.attr('href'),
             'price': item.find('.Price--priceInt--ZlsSi_M').text(),
@@ -53,6 +63,11 @@ def get_products():
             'title': item.find('.Title--title--jCOPvpf').text(),
             'shop': item.find('.ShopInfo--TextAndPic--yH0AZfx').text(),
             'location': item.find('.Price--procity--_7Vt3mX').text()}
+        count += 1
+        ws.cell(row=count, column=1, value=str(count - 1))
+        ws.cell(row=count, column=2, value=str(product['url']))
+        ws.cell(row=count, column=3, value=str(product['title']))
+        ws.cell(row=count, column=4, value=str(product['price']))
         print(product)
 
 # 自动获取商品信息并自动翻页
@@ -78,7 +93,8 @@ if __name__ == '__main__':
     if is_loging:
         print('已经登录')
         time.sleep(10)
-        KEYWORD = 'iPad'
+        KEYWORD = '5g手机'
         url = 'https://s.taobao.com/search?page=1&q=' + quote(KEYWORD) + '&tab=all'
-        max_page = 2
+        max_page = 3
         index_page(url, 1, max_page)
+        wb.save("tb.xlsx")  # 保存
