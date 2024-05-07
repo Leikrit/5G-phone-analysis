@@ -10,8 +10,8 @@ import time
 import openpyxl
 
 chrome_options = Options()
-chrome_options.add_experimental_option("debuggerAddress", "localhost:9222") #此处端口保持和命令行启动的端口一致
-driver = Chrome(options=chrome_options)
+chrome_options.add_experimental_option("debuggerAddress", "localhost:9222")  # 此处端口保持和命令行启动的端口一致
+driver = Chrome(options=chrome_options, )  # executable_path='D:\Anaconda3\chrome-win64\chromedriver.exe'
 wait = WebDriverWait(driver, 10)
 
 
@@ -23,17 +23,17 @@ ws.cell(row=1, column=2, value="id")
 ws.cell(row=1, column=3, value="name")
 ws.cell(row=1, column=4, value="price")
 
+
 # 模拟淘宝登录
-# chrome.exe --remote-debugging-port=9222 --user-data-dir='某个存在的文件夹地址'
+# chrome.exe --remote-debugging-port=9222 --user-data-dir='D:\chrome_data'
 def login_taobao():
-    print('开始登录...')
+    login_url = 'https://login.taobao.com/member/login.jhtml'
     try:
-        login_url='https://login.taobao.com/member/login.jhtml'
         driver.get(login_url)
         input_login_id = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-id')))
         input_login_password = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-password')))
-        input_login_id.send_keys('tb64925158')  # 用你自己的淘宝账号替换
-        input_login_password.send_keys('@zdm200212')  # 用你自己的密码替换
+        input_login_id.send_keys('tb9792054524')  # 用你自己的淘宝账号替换  tb9792054524，tb64925158
+        input_login_password.send_keys('Alihualin123')  # 用你自己的密码替换  Alihualin123，@zdm200212
         submit = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.fm-button.fm-submit.password-login')))
         submit.click()
         is_loging = wait.until(EC.url_changes(login_url))
@@ -70,31 +70,32 @@ def get_products():
         ws.cell(row=count, column=4, value=str(product['price']))
         print(product)
 
+
 # 自动获取商品信息并自动翻页
-def index_page(url,cur_page,max_page):
-    print(' 正在爬取：'+url)
+def index_page(url, cur_page, max_page):
     try:
         driver.get(url)
         get_products()
         next_page_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//button/span[contains(text(),"下一页")]')))
         next_page_btn.click()
         do_change = wait.until(EC.url_changes(url))
-        if do_change and cur_page<max_page:
-            new_url=driver.current_url
+        if do_change and cur_page < max_page:
+            new_url = driver.current_url
             cur_page = cur_page + 1
-            index_page(new_url,cur_page,max_page)
+            time.sleep(0.5)
+            index_page(new_url, cur_page, max_page)
     except TimeoutException:
         print('---index_page TimeoutException---')
 
 
 if __name__ == '__main__':
-    # is_loging=login_taobao()
+    # is_loging = login_taobao()
     is_loging = True
     if is_loging:
         print('已经登录')
-        time.sleep(10)
+        time.sleep(3)
         KEYWORD = '5g手机'
         url = 'https://s.taobao.com/search?page=1&q=' + quote(KEYWORD) + '&tab=all'
         max_page = 3
         index_page(url, 1, max_page)
-        wb.save("tb.xlsx")  # 保存
+        wb.save("tb.xlsx")  # 保存手机商品的网址信息
