@@ -26,6 +26,7 @@ wait = WebDriverWait(driver, 10)
 def get_item(url):
     result = {}  # 手机参数
     comment_list = []
+    hp_percent = 0
     try:
         driver.get(url)
         time.sleep(2)
@@ -52,13 +53,46 @@ def get_item(url):
         comment_btn = wait.until(EC.element_to_be_clickable(
             (By.XPATH, '//*[@id="detail"]/div[1]/ul/li[5]')))  # 参数按钮
         comment_btn.click()
+        time.sleep(0.5)
+        html = driver.page_source
+        doc = pq(html)
+        hp_percent = doc('.percent-con').text()
+        print('好评率', hp_percent)
+
+        # 差评
+        bad_btn = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="comment"]/div[2]/div[2]/div[1]/ul/li[7]/a')))  # 参数按钮
+        bad_btn.click()
+        time.sleep(1.5)
+        html = driver.page_source
+        doc = pq(html)
+        comments = doc('.comment-con').items()  # ('.J-comments-list comments-list ETab')('.tab-con')
+        for item in comments:
+            comment_list.append('。'.join(item.text().split('\n')))
+
+        # 中评
+        mid_btn = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="comment"]/div[2]/div[2]/div[1]/ul/li[6]/a')))  # 参数按钮
+        mid_btn.click()
+        time.sleep(1.5)
+        html = driver.page_source
+        doc = pq(html)
+        comments = doc('.comment-con').items()  # ('.J-comments-list comments-list ETab')('.tab-con')
+        for item in comments:
+            comment_list.append('。'.join(item.text().split('\n')))
+
+        # 好评
+        good_btn = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="comment"]/div[2]/div[2]/div[1]/ul/li[1]/a')))  # 参数按钮
+        good_btn.click()
+        time.sleep(0.5)
         max_page = 2
         for i in range(max_page):  # 评论翻页
             if i != 0:
                 html = driver.page_source
                 doc = pq(html)
                 if doc.find('.ui-pager-next').text():  # 下一页
-                    next_page_btn = driver.find_element(By.XPATH, '//*[@id="comment-0"]/div[12]/div/div/a[7]')
+                    next_page_btn = driver.find_element(By.XPATH, '//*[@id="comment-0"]/div[12]/div/div/a[2]')
                     driver.execute_script('arguments[0].click();', next_page_btn)
                 else:
                     break
@@ -68,10 +102,11 @@ def get_item(url):
             comments = doc('.comment-con').items()  # ('.J-comments-list comments-list ETab')('.tab-con')
             for item in comments:
                 comment_list.append('。'.join(item.text().split('\n')))
+
         print(comment_list)
     except TimeoutException:
-        return str(result), comment_list
-    return str(result), comment_list
+        return str(result), comment_list, str(hp_percent)
+    return str(result), comment_list, str(hp_percent)
 
 
 def get_jd_item():
@@ -85,6 +120,8 @@ def get_jd_item():
     worksheet.write(0, 2, 'name')
     worksheet.write(0, 3, 'price')
     worksheet.write(0, 4, 'specifications')
+    worksheet.write(0, 5, 'Feedback_Rate')
+    worksheet.write(0, 6, 'comment')
     for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):  # ws.max_row
         id = row[1]
         url = "https://item.jd.com/" + str(id) + ".html"
@@ -92,7 +129,8 @@ def get_jd_item():
         worksheet.write(count, 1, url)
         worksheet.write(count, 2, row[2])
         worksheet.write(count, 3, row[3])
-        spec, comments = get_item(url)
+        spec, comments, hp_percent = get_item(url)
+        worksheet.write(count, 5, hp_percent)
         if len(spec) == 0:
             time.sleep(10)
             continue
@@ -101,7 +139,7 @@ def get_jd_item():
         if len(comments):  # comments不为空
             for index, comment in enumerate(comments):
                 print(comment)
-                worksheet.write(count, index + 5, comment)
+                worksheet.write(count, index + 6, comment)
         else:
             print('empty')
         count += 1
@@ -112,7 +150,7 @@ def read_only():
     wb = openpyxl.load_workbook(filename="jd_item.xlsx")
     ws = wb['Sheet1']
     lis = []
-    dic = {"id": None, "name": None, "price": None, "specification": None, 'comment': None}
+    dic = {"id": None, "name": None, "price": None, "specification": None, 'comment': None, 'Feedback_Rate': None}
     for row in ws.iter_rows(min_row=2, min_col=2, max_row=ws.max_row, values_only=True):  # , max_col=5
         dic["id"] = row[0]
         dic["name"] = row[1]
