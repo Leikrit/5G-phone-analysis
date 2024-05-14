@@ -103,14 +103,14 @@ def get_item(url):
             for item in comments:
                 comment_list.append('。'.join(item.text().split('\n')))
 
-        print(comment_list)
+        print(str(comment_list))
     except TimeoutException:
         return str(result), comment_list, str(hp_percent)
     return str(result), comment_list, str(hp_percent)
 
 
 def get_jd_item():
-    wb = openpyxl.load_workbook(filename="jd.xlsx")
+    wb = openpyxl.load_workbook(filename="jd_picture.xlsx")
     ws = wb['Sheet1']
     count = 1
     workbook = xlsxwriter.Workbook('jd_item.xlsx')
@@ -119,9 +119,11 @@ def get_jd_item():
     worksheet.write(0, 1, 'id')
     worksheet.write(0, 2, 'name')
     worksheet.write(0, 3, 'price')
-    worksheet.write(0, 4, 'specifications')
-    worksheet.write(0, 5, 'Feedback_Rate')
-    worksheet.write(0, 6, 'comment')
+    worksheet.write(0, 4, 'category')
+    worksheet.write(0, 5, 'picture_addr')
+    worksheet.write(0, 6, 'specifications')
+    worksheet.write(0, 7, 'Feedback_Rate')
+    worksheet.write(0, 8, 'comment')
     for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):  # ws.max_row
         id = row[1]
         url = "https://item.jd.com/" + str(id) + ".html"
@@ -129,17 +131,20 @@ def get_jd_item():
         worksheet.write(count, 1, url)
         worksheet.write(count, 2, row[2])
         worksheet.write(count, 3, row[3])
+        worksheet.write(count, 4, row[4])
+        worksheet.write(count, 5, row[5])
         spec, comments, hp_percent = get_item(url)
-        worksheet.write(count, 5, hp_percent)
+        worksheet.write(count, 7, hp_percent)
         if len(spec) == 0:
             time.sleep(10)
             continue
         else:
-            worksheet.write(count, 4, spec)
+            worksheet.write(count, 6, spec)
         if len(comments):  # comments不为空
-            for index, comment in enumerate(comments):
-                print(comment)
-                worksheet.write(count, index + 6, comment)
+            # for index, comment in enumerate(comments):
+            #     print(comment)
+            #     worksheet.write(count, index + 8, comment)
+            worksheet.write(count, 8, str(comments))
         else:
             print('empty')
         count += 1
