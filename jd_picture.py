@@ -8,6 +8,7 @@ from pyquery import PyQuery as pq
 from urllib.parse import quote
 import time
 import openpyxl
+import copy
 
 chrome_options = Options()
 chrome_options.add_experimental_option("debuggerAddress", "localhost:9222")  # 此处端口保持和命令行启动的端口一致
@@ -25,8 +26,8 @@ ws.cell(row=1, column=5, value="category")
 ws.cell(row=1, column=6, value="picture_addr")
 
 
-def index_page(ketword, max_page, count):
-    search = ketword + '手机'
+def index_page(keyword, max_page, count):
+    search = keyword + '手机'
     url = "https://search.jd.com/Search?keyword=" + search
     # btn = wait.until(EC.element_to_be_clickable(
     #     (By.XPATH, '//*[@id="J_selector"]/div[1]/div/div[2]/div[1]/ul/li[1]/a')))  # 参数按钮
@@ -81,22 +82,24 @@ def read_only():
     lis = []
     dic = {"index": None, "id": None, "name": None, "price": None, "category": None, "picture_addr": None}
     for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):  # , max_col=5
+        # print(row)
         dic["index"] = row[0]
         dic['id'] = row[1]
         dic['name'] = row[2]
         dic['price'] = row[3]
         dic["category"] = row[4]
         dic["picture_addr"] = row[5]
-        lis.append(dic)
+        lis.append(copy.deepcopy(dic))
     print(lis)
     return lis
 
 
 if __name__ == '__main__':
-    category = ['华为', '小米', 'apple', '荣耀', '三星', '红米', 'oppo', 'vivo', '一加', '魅族', 'iqoo', '真我']
-    count = 1
-    for i in category:
-        keyword = i
-        max_page = 1
-        count = index_page(keyword, max_page, count)
-    wb.save("jd.xlsx")  # 保存手机商品的网址信息
+    # category = ['华为', '小米', 'apple', '荣耀', '三星', '红米', 'oppo', 'vivo', '一加', '魅族', 'iqoo', '真我']
+    # count = 1
+    # for i in category:
+    #     keyword = i
+    #     max_page = 1
+    #     count = index_page(keyword, max_page, count)
+    # wb.save("jd.xlsx")  # 保存手机商品的网址信息
+    read_only()
