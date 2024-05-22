@@ -45,6 +45,64 @@ def login_taobao():
             login_taobao()
 
 
+def get_item_comment(url):
+    if url[0:6] != 'https:':
+        url = 'https:' + url
+    # print(url)
+    error = False
+    result = {}  # 手机参数
+    comments = []  # 手机评论
+    try:
+        driver.get(url)
+        time.sleep(0.5)
+        html = driver.page_source
+        doc = pq(html)
+        # items = doc('.ItemDetail--attrs--3t-mTb3').items()
+        # items = doc('.Attrs--attrSection--2_G8xGa').items()
+        items = doc('.Attrs--attr--33ShB6X').items()
+        for item in items:
+            product = item.text()
+            count = 0
+            for i in product:
+                if i == "：":
+                    break
+                count += 1
+            result[str(product[:count])] = str(product[count + 1:])
+        print(result)
+
+        time.sleep(1.5)
+        comment_btn = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="root"]/div/div[2]/div[2]/div[2]/div[1]/div/div/div[2]/span')))  # 宝贝评价按钮
+        comment_btn.click()
+        time.sleep(1.5)
+        html = driver.page_source
+        doc = pq(html)
+        for i in range(2):
+            for y in range(10):
+                js = 'window.scrollBy(0,450)'
+                driver.execute_script(js)
+                time.sleep(0.5)
+            items = doc('.Comment--content--15w7fKj').items()  # 找到评论区
+            for item in items:
+                comment = item.text()
+                # print(comment)
+                comments.append(comment)
+            try:
+                # comment_btn = wait.until(EC.element_to_be_clickable(
+                #     (By.XPATH, '//*[@id="root"]/div/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[3]/div/button[2]')))  # 下一页按钮
+                # comment_btn.click()
+                next_page_btn = driver.find_element(By.XPATH, '//*[@id="root"]/div/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[3]/div/button[2]')
+                driver.execute_script('arguments[0].click();', next_page_btn)
+            except Exception as e:
+                break
+        print(comments)
+        return str(result), comments, error
+
+    except Exception as e:
+        error = True
+        return str(result), comments, error
+
+
 def get_item(url):
     # url = 'https://item.taobao.com/item.htm?id=784281900551'
     if url[0:6] != 'https:':
@@ -116,31 +174,66 @@ def get_comment(url):  #
 def get_tb_item():
     wb = openpyxl.load_workbook(filename="tb.xlsx")
     ws = wb['Sheet1']
-    count = 1
+    count = 1313
+    stop_time = 1
+    continue_x = True
+    i = 1
     workbook = xlsxwriter.Workbook('td_item.xlsx')
     worksheet = workbook.add_worksheet()
     worksheet.write(0, 0, 'index')
     worksheet.write(0, 1, 'id')
     worksheet.write(0, 2, 'name')
     worksheet.write(0, 3, 'price')
-    worksheet.write(0, 4, 'specifications')
-    worksheet.write(0, 5, 'comments')
-    for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):  # 
+    worksheet.write(0, 4, 'category')
+    worksheet.write(0, 5, 'picture_addr')
+    worksheet.write(0, 6, 'specifications')
+    worksheet.write(0, 7, 'comment')
+    wb_help = openpyxl.load_workbook(filename="td_item.xlsx")
+    ws_help = wb_help['Sheet1']
+    for row in ws_help.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):
+        if i < count and continue_x:
+            worksheet.write(i, 0, row[0])
+            worksheet.write(i, 1, row[1])
+            worksheet.write(i, 2, row[2])
+            worksheet.write(i, 3, row[3])
+            worksheet.write(i, 4, row[4])
+            worksheet.write(i, 5, row[5])
+            worksheet.write(i, 6, row[6])
+            worksheet.write(i, 7, row[7])
+            i += 1
+        else:
+            break
+    i = 1
+    for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, values_only=True):
+        if i < count and continue_x:
+            i += 1
+            continue
+        continue_x = False
         url = row[1]
         if url[0:6] != 'https:':
             url = 'https:' + url
+        spec, comments, error = get_item_comment(url)
+        if error:
+            print(count)
+            break
         worksheet.write(count, 0, row[0])
         worksheet.write(count, 1, url)
         worksheet.write(count, 2, row[2])
         worksheet.write(count, 3, row[3])
-        spec, comments = get_item(url)
-        worksheet.write(count, 4, spec)
-        if len(comments):  # comments不为空
-            for index, comment in enumerate(comments):
-                worksheet.write(count, index + 5, comment)
-        else:
-            print('empty')
+        worksheet.write(count, 4, row[4])
+        worksheet.write(count, 5, row[5])
+        worksheet.write(count, 6, spec)
+        worksheet.write(count, 7, str(comments))
+        # if len(comments):  # comments不为空
+        #     for index, comment in enumerate(comments):
+        #         worksheet.write(count, index + 7, comment)
+        # else:
+        #     print('empty')
         count += 1
+        stop_time += 1
+        if stop_time > 100:
+            print(count)
+            break
     workbook.close()
 
 
@@ -148,15 +241,19 @@ def read_only():
     wb = openpyxl.load_workbook(filename="td_item.xlsx")
     ws = wb['Sheet1']
     lis = []
-    dic = {"id": None, "name": None, "price": None, "specification": None}
-    for row in ws.iter_rows(min_row=2, min_col=2, max_row=ws.max_row, values_only=True):  # , max_col=5
+    dic = {"id": None, "name": None, "price": None, "category": None, 'picture_addr': None, 'specification': None,
+           'comments': None}
+    for row in ws.iter_rows(min_row=2, min_col=2, max_row=ws.max_row, values_only=True):
+        # print(row)
         dic["id"] = row[0]
         dic["name"] = row[1]
         dic["price"] = row[2]
-        print(row[3])  # 手机参数
-        c = ast.literal_eval(row[3])
+        dic["category"] = row[4]
+        dic["picture_addr"] = row[5]
+        c = ast.literal_eval(row[6])
         # print(c, type(c))
         dic["specification"] = c
+        dic['comments'] = row[7]
         lis.append(dic)
     # print(lis)
     return lis
@@ -169,4 +266,4 @@ if __name__ == '__main__':
         print('已经登录')
         time.sleep(3)
         get_tb_item()  # 爬取手机参数和评价
-    read_only()
+    # read_only()

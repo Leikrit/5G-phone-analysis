@@ -17,11 +17,13 @@ wait = WebDriverWait(driver, 10)
 
 wb = openpyxl.Workbook()
 ws = wb.create_sheet(index=0)
-
+count = 1
 ws.cell(row=1, column=1, value="index")
 ws.cell(row=1, column=2, value="id")
 ws.cell(row=1, column=3, value="name")
 ws.cell(row=1, column=4, value="price")
+ws.cell(row=1, column=5, value="category")
+ws.cell(row=1, column=6, value="picture_addr")
 
 
 # 模拟淘宝登录
@@ -50,32 +52,44 @@ def login_taobao():
 
 
 # 解析获取商品信息
-def get_products():
+def get_products(category):
     """提取商品数据"""
+    global count
+    html = driver.page_source
+    doc = pq(html)
+    for y in range(28):
+        js = 'window.scrollBy(0,200)'
+        driver.execute_script(js)
+        time.sleep(0.5)
     html = driver.page_source
     doc = pq(html)
     items = doc('.Card--doubleCardWrapper--L2XFE73').items()
-    count = 1
     for item in items:
         product = {'url': item.attr('href'),
             'price': item.find('.Price--priceInt--ZlsSi_M').text(),
             'realsales': item.find('.Price--realSales--FhTZc7U').text(),
             'title': item.find('.Title--title--jCOPvpf').text(),
             'shop': item.find('.ShopInfo--TextAndPic--yH0AZfx').text(),
-            'location': item.find('.Price--procity--_7Vt3mX').text()}
+            'location': item.find('.Price--procity--_7Vt3mX').text(),
+            'category':category,
+            'picture_addr':item.find('.MainPic--mainPicWrapper--iv9Yv90')('img').attr('src')}
         count += 1
+        if product['url'][0:6] != 'https:':
+            product['url'] = 'https:' + product['url']
         ws.cell(row=count, column=1, value=str(count - 1))
         ws.cell(row=count, column=2, value=str(product['url']))
         ws.cell(row=count, column=3, value=str(product['title']))
         ws.cell(row=count, column=4, value=str(product['price']))
+        ws.cell(row=count, column=5, value=str(product['category']))
+        ws.cell(row=count, column=6, value=str(product['picture_addr']))
         print(product)
 
 
 # 自动获取商品信息并自动翻页
-def index_page(url, cur_page, max_page):
+def index_page(url, cur_page, max_page, catagory):
     try:
         driver.get(url)
-        get_products()
+        get_products(catagory)
         next_page_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//button/span[contains(text(),"下一页")]')))
         next_page_btn.click()
         do_change = wait.until(EC.url_changes(url))
@@ -83,19 +97,21 @@ def index_page(url, cur_page, max_page):
             new_url = driver.current_url
             cur_page = cur_page + 1
             time.sleep(0.5)
-            index_page(new_url, cur_page, max_page)
+            index_page(new_url, cur_page, max_page, catagory)
     except TimeoutException:
         print('---index_page TimeoutException---')
 
 
 if __name__ == '__main__':
     # is_loging = login_taobao()
+    category = ['华为', '小米', 'apple', '荣耀', '三星', '红米', 'oppo', 'vivo', '一加', '魅族', 'iqoo', '真我']
     is_loging = True
     if is_loging:
         print('已经登录')
         time.sleep(3)
-        KEYWORD = '5g手机'
-        url = 'https://s.taobao.com/search?page=1&q=' + quote(KEYWORD) + '&tab=all'
-        max_page = 3
-        index_page(url, 1, max_page)
+        for i in category:
+            KEYWORD = i + '手机'
+            url = 'https://s.taobao.com/search?page=1&q=' + quote(KEYWORD) + '&tab=all'
+            max_page = 3
+            index_page(url, 1, max_page, i)
         wb.save("tb.xlsx")  # 保存手机商品的网址信息
