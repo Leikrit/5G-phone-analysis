@@ -29,7 +29,7 @@ def login_taobao():
         input_login_id = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-id')))
         input_login_password = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-password')))
         input_login_id.send_keys('')  # 用你自己的淘宝账号替换
-        input_login_password.send_keys('Alihualin123')  # 用你自己的密码替换
+        input_login_password.send_keys('')  # 用你自己的密码替换
         submit = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.fm-button.fm-submit.password-login')))
         submit.click()
         is_loging = wait.until(EC.url_changes(login_url))
@@ -81,7 +81,7 @@ def get_item_comment(url):
             for y in range(10):
                 js = 'window.scrollBy(0,450)'
                 driver.execute_script(js)
-                time.sleep(0.5)
+                time.sleep(1)
             items = doc('.Comment--content--15w7fKj').items()  # 找到评论区
             for item in items:
                 comment = item.text()
@@ -174,7 +174,7 @@ def get_comment(url):  #
 def get_tb_item():
     wb = openpyxl.load_workbook(filename="tb.xlsx")
     ws = wb['Sheet1']
-    count = 1313
+    count = 1597
     stop_time = 1
     continue_x = True
     i = 1
@@ -231,7 +231,7 @@ def get_tb_item():
         #     print('empty')
         count += 1
         stop_time += 1
-        if stop_time > 100:
+        if stop_time > 50:
             print(count)
             break
     workbook.close()
@@ -264,6 +264,5 @@ if __name__ == '__main__':
     is_loging = True
     if is_loging:
         print('已经登录')
-        time.sleep(3)
         get_tb_item()  # 爬取手机参数和评价
     # read_only()
