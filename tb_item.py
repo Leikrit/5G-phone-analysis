@@ -29,7 +29,7 @@ def login_taobao():
         input_login_id = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-id')))
         input_login_password = wait.until(EC.presence_of_element_located((By.ID, 'fm-login-password')))
         input_login_id.send_keys('')  # 用你自己的淘宝账号替换
-        input_login_password.send_keys('')  # 用你自己的密码替换
+        input_login_password.send_keys('Alihualin123')  # 用你自己的密码替换
         submit = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.fm-button.fm-submit.password-login')))
         submit.click()
         is_loging = wait.until(EC.url_changes(login_url))
@@ -81,7 +81,7 @@ def get_item_comment(url):
             for y in range(10):
                 js = 'window.scrollBy(0,450)'
                 driver.execute_script(js)
-                time.sleep(1)
+                time.sleep(0.5)
             items = doc('.Comment--content--15w7fKj').items()  # 找到评论区
             for item in items:
                 comment = item.text()
@@ -174,9 +174,9 @@ def get_comment(url):  #
 def get_tb_item():
     wb = openpyxl.load_workbook(filename="tb.xlsx")
     ws = wb['Sheet1']
-    count = 1597
+    count = 1
     stop_time = 1
-    continue_x = True
+    continue_x = False
     i = 1
     workbook = xlsxwriter.Workbook('td_item.xlsx')
     worksheet = workbook.add_worksheet()
@@ -231,7 +231,7 @@ def get_tb_item():
         #     print('empty')
         count += 1
         stop_time += 1
-        if stop_time > 50:
+        if stop_time > 100:
             print(count)
             break
     workbook.close()
@@ -245,16 +245,18 @@ def read_only():
            'comments': None}
     for row in ws.iter_rows(min_row=2, min_col=2, max_row=ws.max_row, values_only=True):
         # print(row)
-        dic["id"] = row[0]
-        dic["name"] = row[1]
-        dic["price"] = row[2]
-        dic["category"] = row[4]
-        dic["picture_addr"] = row[5]
-        c = ast.literal_eval(row[6])
-        # print(c, type(c))
-        dic["specification"] = c
-        dic['comments'] = row[7]
-        lis.append(dic)
+        print(row[0])
+        if row[0] != None:
+            dic["id"] = row[0]
+            dic["name"] = row[1]
+            dic["price"] = row[2]
+            dic["category"] = row[3]
+            dic["picture_addr"] = row[4]
+            c = ast.literal_eval(row[5])
+            # print(c, type(c))
+            dic["specification"] = c
+            dic['comments'] = row[6]
+            lis.append(dic)
     # print(lis)
     return lis
 
@@ -264,5 +266,6 @@ if __name__ == '__main__':
     is_loging = True
     if is_loging:
         print('已经登录')
-        get_tb_item()  # 爬取手机参数和评价
-    # read_only()
+        time.sleep(3)
+        # get_tb_item()  # 爬取手机参数和评价
+        print(read_only())
